@@ -1,0 +1,108 @@
+<%- include('partials/header'); -%>
+<%- include('partials/nav'); -%>
+
+<div class="add1"><a href="/new" class="add">Įkelti</a></div>
+<div id="homepage">
+    
+    <h2>Surask programuotoją šalia savęs!</h2>
+    <div id="devs"></div>
+</div>
+
+<script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+<script src="https://unpkg.com/react@15/dist/react.js"></script>
+<script src="https://unpkg.com/react-dom@15/dist/react-dom.min.js"></script>
+
+<script type="text/babel">
+    var Devs = React.createClass({
+        getInitialState: function () {
+            return {
+                devs: []
+            };
+        },
+
+        render: function () {
+            var devs = this.state.devs
+
+            return (
+                <div id="dev-container">
+                    <form id="search" onSubmit={this.handleSubmit}>
+                        <label>Ilguma:</label>
+                        <input type="number" ref="lng" placeholder="ilguma" required />
+                        <label>Platuma:</label>
+                        <input type="number" ref="lat" placeholder="platuma" required />
+                        <input type="submit" value="Rasti programuotojus" />
+                    </form>
+                    <ul>
+                        {devs.map((dev, index) => (
+                            <div key={index}>
+                                <li>
+                                    <span className={dev.laisvas ? 'free' : 'busy'}></span>
+                                    <span className="name">{dev.vardas}</span>
+                                    <span className="rank">{dev.tech.join(', ')}</span>
+                                    <span className="dist">{Math.floor(dev.distance / 1000)} km</span>
+                                </li>
+                                <a className="delete" onClick={() => this.handleDelete(dev._id)}>Trinti</a>
+                                <a className="edit" onClick={() => this.handleEdit(dev._id)}>Keisti</a>
+                            </div>
+                        ))}
+                    </ul>
+                </div>
+            );
+        },
+
+        handleSubmit: function (e) {
+            e.preventDefault();
+            var lng = this.refs.lng.value;
+            var lat = this.refs.lat.value;
+
+            fetch('/api/programuotojai/?lng=' + lng + '&lat=' + lat)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(json => {
+                    this.setState({
+                        devs: json
+                    });
+                    console.log(json);
+                })
+                .catch(error => {
+                    console.error('Error during fetch:', error);
+                });
+        },
+
+        handleDelete: function (id) {
+            fetch(`/api/programuotojai/${id}`, {
+                method: 'DELETE'
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Jungties klaida');
+                    }
+                    return response.json();
+                })
+                .then(json => {
+                    this.setState(prevState => ({
+                        devs: prevState.devs.filter(dev => dev._id !== id)
+                    }));
+                    console.log('Deleted:', json);
+                })
+                .catch(error => {
+                    console.error('Error during fetch:', error);
+                });
+        },
+
+        handleEdit: function (id) {
+            window.location.assign(`/api/programuotojai/${id}`)
+        }
+    })
+
+    ReactDOM.render(<Devs />, document.getElementById('devs'));
+</script>
+
+
+
+
+<%- include('partials/footer'); -%>

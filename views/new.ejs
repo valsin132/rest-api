@@ -1,0 +1,148 @@
+<%- include('partials/header'); -%>
+<%- include('partials/nav'); -%>
+
+
+<div id="add">
+    <form id="new">
+    <h2>Įkelti naują programuotoją</h2>
+    <p>Vardas</p>
+    <input type="text" name="vardas" placeholder="Prašome įrašyti savo vardą" required>
+
+    <p>Laisvas ?</p>
+    <label for="laisvasTaip">Taip</label>
+    <input type="radio" name="laisvas" value="taip">
+    <label for="laisvasNe">Ne</label>
+    <input type="radio" name="laisvas" value="ne">
+
+    <!-- igudziai -->
+    <p>Įgudžiai:</p>
+    <label for="html"> HTML </label>
+    <input type="checkbox" name="tech" value="HTML">
+    
+    <label for="css"> CSS </label>
+    <input type="checkbox" name="tech" value="CSS">
+    
+    <label for="javascript"> JavaScript </label>
+    <input type="checkbox" name="tech" value="JavaScript">
+    
+    <label for="python"> Python </label>
+    <input type="checkbox" name="tech" value="Python">
+    
+    <label for="ruby"> Ruby </label>
+    <input type="checkbox" name="tech" value="Ruby">
+    
+    <label for="c++"> C++ </label>
+    <input type="checkbox" name="tech" value="C++">
+    
+    <label for="C#"> C# </label>
+    <input type="checkbox" name="tech" value="C#">
+    
+    <label for="powerBI"> Power BI </label>
+    <input type="checkbox" name="tech" value="Power BI">
+    
+    <label for="React"> React </label>
+    <input type="checkbox" name="tech" value="React">
+    
+    <label for="Vue"> Vue </label>
+    <input type="checkbox" name="tech" value="Vue">
+    
+    <label for="Angular"> Angular </label>
+    <input type="checkbox" name="tech" value="Angular">
+    
+    <label for="java"> Java </label>
+    <input type="checkbox" name="tech" value="Java">
+    
+    
+    <!-- coordinates -->
+    <p>Location</p>
+    <select id="miestas" name="miestas"></select>
+
+    <input type="submit" value="Įkelti">
+    
+    </form>
+</div>
+
+
+<script>
+
+    const form = document.getElementById('new')
+    const cityDropdown = document.getElementById('miestas')
+
+
+    fetch('https://public.opendatasoft.com/api/explore/v2.1/catalog/datasets/geonames-all-cities-with-a-population-1000/records?limit=20&refine=timezone%3A%22Europe%22&refine=cou_name_en%3A%22Lithuania%22')
+        .then(response => response.json())
+        .then(data => {
+            console.log(data)
+            console.log(data.results[0].name)
+
+            data.results.forEach(res => {
+                const option = document.createElement('option')
+                option.value = res.name
+                option.textContent = res.name
+
+                const lon = res.coordinates.lon
+                const lat = res.coordinates.lat
+
+                // Prideti koordinates i option elementa
+                option.dataset.lon = lon;
+                option.dataset.lat = lat;
+
+                cityDropdown.appendChild(option)
+            })
+        })
+        .catch(err => console.error('something went wrong'))
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault()
+
+
+        //get values
+        const vardas = form.vardas.value;
+
+        const laisvasChecked = form.querySelector('input[name="laisvas"]:checked')
+
+        let laisvas = false
+        if(laisvasChecked.value === 'taip') {
+            laisvas = true
+        } 
+
+        //eina per visus checked tech
+        const tech = Array.from(form.querySelectorAll('input[name="tech"]:checked'))
+            .map(checked => checked.value);
+
+        //location
+        const selectedOption = cityDropdown.options[cityDropdown.selectedIndex];
+        console.log(selectedOption)
+        const lon = selectedOption.dataset.lon;
+        const lat = selectedOption.dataset.lat;      
+
+        const location = {
+            type: 'Point',
+            coordinates: [ parseFloat(lat), parseFloat(lon)]
+        };
+
+
+        try{
+            const res = await fetch('/api/programuotojai', {
+                method: 'POST',
+                body: JSON.stringify({vardas, laisvas, tech, location}),
+                headers: {'Content-Type': 'application/json'}
+            })
+            
+            if(!res.ok) {
+                throw new Error('Something is wrong')
+            }
+
+            const data = await res.json()
+            console.log('New dev was added: ', data)
+        
+            window.location.assign('/')
+            
+        } catch(err) {
+            console.log(err)
+        }
+    })
+</script>
+
+
+<%- include('partials/footer'); -%>
